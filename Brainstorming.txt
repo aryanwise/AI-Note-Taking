@@ -1,0 +1,113 @@
+Project Brief: CogniNote - The Intelligent Knowledge Hub
+
+1. Vision Statement
+   To create a desktop application that transforms passive information consumption into an active, personalized learning experience through AI-powered note-taking, knowledge management, and content synthesis.
+
+---
+
+2. Core Pillars
+   The application is built on three foundational pillars that work together:
+
+3. Universal Ingestion Engine: A system to get information into the app from any source, whether live audio, web links, or local documents.
+
+4. Personalized Knowledge Engine (RAG): A private, local-first AI that understands and reasons about the user's entire library of notes and documents, enabling conversational Q&A.
+
+5. Connected Workflow Engine (Connectors): A flexible export system to send curated notes out to the user's preferred platforms and formats.
+
+---
+
+3. Key Features Breakdown
+
+Pillar 1: Universal Ingestion Engine
+
+* Live Transcription:
+
+  * Real-time audio capture from the user's microphone.
+  * Local, high-performance transcription using faster-whisper.
+* Link-Based Ingestion:
+
+  * Process YouTube video or playlist links using yt-dlp.
+  * Fetch existing transcripts for speed or download audio for local transcription.
+* Browser Extension Bridge:
+
+  * A companion browser extension for capturing text from authenticated platforms such as Udemy or Coursera.
+  * Communicates with the main Python app via a local server bridge.
+  * Note: Must be used responsibly and in accordance with platform Terms of Service.
+* Local Document Ingestion:
+
+  * Direct import of local files such as PDF, DOCX, TXT, and Markdown.
+  * Uses libraries like pypdf and python-docx to extract text.
+
+Pillar 2: Personalized Knowledge Engine (RAG)
+
+* AI-Powered Note-Taking:
+
+  * Generates notes, summaries, and action items from ingested text.
+  * Can mimic the user’s personal note-taking style through few-shot prompting.
+* Local Vector Database:
+
+  * All ingested content is chunked, embedded, and stored locally using ChromaDB.
+  * Keeps user data private and on-device.
+* Conversational Q&A:
+
+  * A chat interface lets users ask questions about all their stored notes.
+  * The language model retrieves relevant context and provides accurate answers with source references.
+
+Pillar 3: Connected Workflow Engine (Connectors)
+
+* Local Export:
+
+  * Save notes in multiple formats including PDF, Markdown, and Plain Text.
+* Notion Integration:
+
+  * Connect to the user’s Notion account and export notes as pages in a selected database.
+* Google Drive Integration:
+
+  * Connect to Google Drive and export notes as Google Docs.
+* GoodNotes Compatibility:
+
+  * Generate styled PDFs formatted for GoodNotes import.
+
+---
+
+4. Technical Architecture
+
+* Language: Python
+* Framework: PySide6
+* Core AI Libraries:
+
+  * Speech-to-text: faster-whisper
+  * Language models: Ollama (local), OpenAI (API)
+  * RAG pipeline: sentence-transformers, chromadb, langchain
+* Databases:
+
+  * Session and metadata: SQLite
+  * Vector storage: ChromaDB
+* File Structure:
+  ai-note-taker/
+  main.py
+  requirements.txt
+  app/
+  ui/
+  core/ (Transcriber, LLMHandler, RAG_Manager)
+  utils/
+
+---
+
+5. Phased Development Roadmap
+
+Phase 1: The Live MVP (Completed)
+Goal: A working live note-taker.
+Features: Draggable UI, microphone transcription, real-time note generation with Ollama, and session saving.
+
+Phase 2: The Knowledge Hub (RAG Integration)
+Goal: Enable document understanding.
+Features: Document drag-and-drop, chunking and embedding pipeline, ChromaDB setup, and basic Q&A interface.
+
+Phase 3: The Universal Importer
+Goal: Expand data sources beyond live audio.
+Features: Add YouTube ingestion, build browser extension, and local server bridge.
+
+Phase 4: The Connected Exporter
+Goal: Enable easy note export.
+Features: PDF and TXT export, followed by Notion and Google Drive integrations.
