@@ -1,0 +1,160 @@
+Technical Plan: AI-Note-Taking
+This plan outlines the architecture, data models, and implementation phases for building the CogniNote application.
+
+---
+
+1. Core Architecture and Setup
+   The foundation is a multi-threaded Python application using PySide6 for the user interface, with a clear separation between UI, core logic, and utility services.
+
+Libraries and Dependencies
+The requirements.txt file will contain:
+
+Core Framework
+
+* PySide6
+* numpy
+
+Transcription and Audio
+
+* faster-whisper
+* sounddevice
+
+LLM and RAG
+
+* ollama
+* sentence-transformers (for embeddings)
+* chromadb (local vector database)
+* langchain (for chunking and document loading)
+* pypdf (for PDF text extraction)
+
+Data Ingestion and Connectors
+
+* yt-dlp (YouTube processing)
+* fastapi (local bridge server)
+* uvicorn (server runner)
+* notion-client (Notion API)
+* google-api-python-client (Google Drive API)
+* oauth2client (authentication)
+
+File Export
+
+* reportlab (PDF generation)
+
+Project File Structure
+app/
+ui/
+main_window.py
+widgets/
+core/
+transcriber.py
+llm_handler.py
+rag_manager.py
+ingestion_service.py
+export_service.py
+bridge_server.py
+utils/
+stylesheet.py
+db_manager.py
+
+---
+
+2. Data Models (SQLite)
+   All local persistence is handled by db_manager.py using a single SQLite database named cogninote.db.
+
+documents table
+
+* id (INTEGER, PRIMARY KEY)
+* source_type (TEXT: pdf, youtube, webscrape, etc.)
+* source_path_or_url (TEXT)
+* status (TEXT: pending, indexed, error)
+* created_at (TIMESTAMP)
+
+sessions table
+
+* id (INTEGER, PRIMARY KEY)
+* name (TEXT)
+* source_document_id (INTEGER, FOREIGN KEY to documents)
+* created_at (TIMESTAMP)
+
+notes table
+
+* id (INTEGER, PRIMARY KEY)
+* session_id (INTEGER, FOREIGN KEY to sessions)
+* content (TEXT)
+* created_at (TIMESTAMP)
+
+---
+
+3. Phase 2: RAG Implementation (rag_manager.py)
+   This phase implements the Retrieval-Augmented Generation system.
+
+Class: RAGManager
+Responsibilities: Manage document ingestion, chunking, embeddings, storage in ChromaDB, and user queries.
+
+Initialization
+
+* Load the sentence-transformer model (for example: all-MiniLM-L6-v2).
+* Initialize ChromaDB and create or open the “cogninote_documents” collection.
+
+Method: add_document(document_id, file_path)
+
+1. Use LangChain loaders to extract text (for example: PyPDFLoader).
+2. Split the text into manageable chunks using RecursiveCharacterTextSplitter.
+3. Generate embeddings for each chunk.
+4. Store chunk text and embeddings in ChromaDB with metadata.
+5. Update the document’s status to “indexed” in the SQLite database.
+
+Method: query(question_text)
+
+1. Embed the question text.
+2. Retrieve the top relevant chunks from ChromaDB.
+3. Construct a prompt that includes the question and retrieved context.
+4. Pass it to LLMHandler for answer generation.
+5. Return the answer to the caller.
+
+---
+
+4. Phase 3: Universal Importer (ingestion_service.py and bridge_server.py)
+   This phase handles external data ingestion.
+
+Class: IngestionService
+Method: ingest_youtube_url(url)
+
+1. Use yt-dlp to look for an existing transcript.
+2. If none found, download the audio as mp3.
+3. Use Transcriber to transcribe the file into text.
+4. Save the result as a document record and pass it to RAGManager.add_document().
+
+Module: bridge_server.py
+
+* Framework: FastAPI (lightweight async server).
+* Endpoint: POST /ingest
+  Accepts JSON with a “text” field.
+  On request:
+
+  1. Create a new record in the documents table (source_type = webscrape).
+  2. Call RAGManager.add_document() with the provided text.
+* The server runs in a separate thread started by main.py at launch.
+
+---
+
+5. Phase 4: Connected Exporter (export_service.py)
+   This phase focuses on data output.
+
+Class: ExportService
+
+Method: export_to_pdf(session_id)
+
+1. Retrieve all notes for the session from SQLite.
+2. Use reportlab to create a PDF.
+3. Format with headings and paragraphs.
+4. Prompt user for output location and save file.
+
+Method: export_to_notion(session_id, api_key, database_id)
+
+1. Initialize the Notion client with api_key.
+2. Query notes from SQLite.
+3. Convert note text into Notion’s block JSON structure.
+4. Create a new Notion page via pages.create.
+5. Handle potential API errors such as invalid credentials or permissions issues.
+
